@@ -12,7 +12,6 @@ static void on_activate(GtkApplication *gtk_app, gpointer user_data) {
     // Set unique ID for desktop integration
     gtk_window_set_application(GTK_WINDOW(app->window), gtk_app);
 
-    // Your UI setup function (passing the app struct)
     create_ui(app);
 
     gtk_widget_show_all(app->window);

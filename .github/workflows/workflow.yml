@@ -1,0 +1,62 @@
+name: Build and Release Alpha DEB Package
+
+on:
+  push:
+    tags:
+      - 'v*alpha*'
+
+env:
+  BUILD_TYPE: Release
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-pack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Latest CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 4.2.0
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get install -y cmake ninja-build glib-2.0 \
+                                 libgtk-3-dev libcanberra-dev libcanberra-gtk3-dev \
+                                 pkg-config
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+      - name: Build Project
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Run Logic Tests
+        working-directory: ${{github.workspace}}/build
+        run: xvfb-run ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+
+      - name: Generate Debian Package
+        working-directory: ${{github.workspace}}/build
+        run: cpack -C ${{env.BUILD_TYPE}}
+
+      - name: Create GitHub Alpha Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{github.workspace}}/build/*.deb
+          draft: false
+          prerelease: true
+          body: |
+            ### 25+5 Clock Alpha Release
+            This is an **Alpha Pre-release** version of the 25+5 Clock application.
+            
+            #### Assets Included:
+            - Native `.deb` archive bundle for Debian/Ubuntu systems.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
