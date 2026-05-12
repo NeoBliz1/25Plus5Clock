@@ -1,0 +1,33 @@
+/* General font for labels and inputs */
+button, entry, label {
+    font-family: 'Ubuntu', 'Cantarell', 'Sans';
+    font-size: 14pt;
+}
+
+/* Specific style for the big timer */
+#main-timer {
+    font-size: 36pt;
+    font-weight: bold;
+}
+
+/* Green button (Start/Pause) */
+.green-btn {
+    background-image: none;
+    background-color: #72b043;
+    color: white;
+    border-radius: 4px;
+    font-size: 18pt;
+    font-weight: bold;
+}
+.green-btn:hover { background-color: #82c053; }
+
+/* Red button (Reset) */
+.red-btn {
+    background-image: none;
+    background-color: #ff4d4d;
+    color: white;
+    border-radius: 4px;
+    font-size: 18pt;
+    font-weight: bold;
+}
+.red-btn:hover { background-color: #ff5d5d; }

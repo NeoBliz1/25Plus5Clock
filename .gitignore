@@ -1,0 +1,21 @@
+# CMake
+cmake-build-debug/
+cmake-build-release/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# CLion
+.idea/
+
+# Binaries
+*.o
+*.so
+*.a
+25Plus5Clock
+
+# Other
+*.swp
+*~
+.DS_Store
