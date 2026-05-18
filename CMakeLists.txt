@@ -39,14 +39,33 @@ add_executable(25Plus5Clock
 # 5. Link libraries
 target_link_libraries(25Plus5Clock ${GTK3_LIBRARIES} ${CANBERRA_LIBRARIES})
 
-# 6. Release Optimizations
+# 6. GSettings Schema Compilation Automation
+find_program(GLIB_COMPILE_SCHEMAS NAMES glib-compile-schemas REQUIRED)
+
+add_custom_command(
+        TARGET 25Plus5Clock PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/com.github.neobliz1.25Plus5Clock.gschema.xml
+        ${CMAKE_CURRENT_BINARY_DIR}/
+        COMMENT "Syncing schema configuration mapping files..."
+)
+
+add_custom_command(
+        TARGET 25Plus5Clock POST_BUILD
+        COMMAND ${GLIB_COMPILE_SCHEMAS} ${CMAKE_CURRENT_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Compiling local GSettings application schemas..."
+        VERBATIM
+)
+
+# 7. Release Optimizations
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set_target_properties(25Plus5Clock PROPERTIES
             COMPILE_FLAGS "-Os"
             LINK_FLAGS "-s")
 endif()
 
-# 7. Installation Rules (Standard GNU Paths)
+# 8. Installation Rules (Standard GNU Paths)
 include(GNUInstallDirs)
 
 # Install the executable binary to /usr/local/bin
@@ -61,22 +80,44 @@ install(FILES icon.svg
         DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
         RENAME com.github.neobliz1.Clock25Plus5.svg)
 
-# 8. Automated Logic Verification Framework
+# Install the schema layout blueprint straight to the system glib repository
+install(FILES com.github.neobliz1.25Plus5Clock.gschema.xml
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/glib-2.0/schemas)
+
+# 9. Automated Logic Verification Framework
 enable_testing()
 
-# Define the automated execution file target mapping
-add_executable(run_logic_tests tests/test_logic.c src/app.c src/callbacks.c)
+# --- Common Test Target Dependencies ---
+# Collect files required by multiple test runners to avoid repetition
+set(TEST_CORE_SOURCES src/app.c src/callbacks.c)
 
-# Add inclusion directory lookups to map your header configurations
+# ----------------------------------------------------
+# Target 1: Core Logic Test Runner
+# ----------------------------------------------------
+add_executable(run_logic_tests tests/test_logic.c ${TEST_CORE_SOURCES})
 target_include_directories(run_logic_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-# Link your GTK and Canberra compilation symbols
 target_link_libraries(run_logic_tests PRIVATE ${GTK3_LIBRARIES} ${CANBERRA_LIBRARIES})
 
-# Register the testing target under the system CMake index engine
+# Register and apply structural labels for parallel execution or filtering
 add_test(NAME CoreLogicTests COMMAND run_logic_tests)
+set_tests_properties(CoreLogicTests PROPERTIES LABELS "logic")
+set_tests_properties(CoreLogicTests PROPERTIES ENVIRONMENT "GSETTINGS_SCHEMA_DIR=${CMAKE_CURRENT_BINARY_DIR}")
+add_dependencies(run_logic_tests 25Plus5Clock)
 
-# 9. Debian Packaging Configuration (CPack Alpha Pre-release)
+# ----------------------------------------------------
+# Target 2: GSettings Persistence Test Runner
+# ----------------------------------------------------
+add_executable(run_gsettings_tests tests/test_timer_gsettings.c ${TEST_CORE_SOURCES})
+target_include_directories(run_gsettings_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(run_gsettings_tests PRIVATE ${GTK3_LIBRARIES} ${CANBERRA_LIBRARIES})
+
+# Register and tag the persistence test module
+add_test(NAME GSettingsPersistenceTests COMMAND run_gsettings_tests)
+set_tests_properties(GSettingsPersistenceTests PROPERTIES LABELS "storage")
+set_tests_properties(GSettingsPersistenceTests PROPERTIES ENVIRONMENT "GSETTINGS_SCHEMA_DIR=${CMAKE_CURRENT_BINARY_DIR}")
+add_dependencies(run_gsettings_tests 25Plus5Clock)
+
+# 10. Debian Packaging Configuration (CPack Alpha Pre-release)
 set(CPACK_PACKAGE_NAME "25plus5clock")
 set(CPACK_PACKAGE_VENDOR "neobliz1")
 

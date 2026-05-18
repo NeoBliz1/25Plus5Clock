@@ -3,7 +3,7 @@
 #include "../include/callbacks.h"
 
 // Mock function to satisfy callbacks.c linkage requirements
-void update_timer_display(TimerApp *app) { (void)app; }
+void update_timer_display(const TimerApp *app) { (void)app; }
 
 // TEST 1: Check if the application struct initializes correctly
 static void test_app_initialization(void) {
@@ -26,7 +26,7 @@ static void test_timer_countdown_tick(void) {
     app->seconds = 0;
 
     // Simulate 1 second passing
-    gboolean keep_running = timer_tick(app);
+    const gboolean keep_running = timer_tick(app);
 
     g_assert_true(keep_running);
     g_assert_cmpint(app->minutes, ==, 24);
