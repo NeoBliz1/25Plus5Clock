@@ -3,8 +3,6 @@
 
 #include <gtk/gtk.h>
 
-extern double default_session_minutes;
-extern double default_break_minutes;
 #define APP_RESOURCE_PREFIX "/com/github/neobliz1/25Plus5Clock"
 #define APP_STYLE_RESOURCE  APP_RESOURCE_PREFIX "/style.css"
 #define APP_ICON_RESOURCE   APP_RESOURCE_PREFIX "/icon.svg"
@@ -17,6 +15,7 @@ typedef struct {
     GtkWidget *session_entry;
     GtkWidget *break_entry;
     GtkWidget *start_button;
+    GSettings *settings;
     int session_total_seconds;
     int break_total_seconds;
     int minutes;

@@ -4,6 +4,6 @@
 #include "app.h"
 
 void create_ui(TimerApp *app);
-void update_timer_display(TimerApp *app);
+void update_timer_display(const TimerApp *app);
 
 #endif

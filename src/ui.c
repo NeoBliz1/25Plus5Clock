@@ -1,7 +1,7 @@
 #include "../include/ui.h"
 #include "../include/callbacks.h"
 
-void update_timer_display(TimerApp *app) {
+void update_timer_display(const TimerApp *app) {
     char buf[16];
     snprintf(buf, sizeof(buf), "%02d:%02d", app->minutes, app->seconds);
     gtk_label_set_text(GTK_LABEL(app->timer_label), buf);
@@ -10,7 +10,6 @@ void update_timer_display(TimerApp *app) {
 
 static void on_window_destroyed(GtkWidget *widget, gpointer data) {
     TimerApp *app = data;
-    // 1. Force clear the background event timer loop safely
     if (app->timer_id > 0) {
         g_source_remove(app->timer_id);
         app->timer_id = 0;
@@ -30,10 +29,13 @@ void create_ui(TimerApp *app) {
     );
     g_object_unref(provider);
 
+    // --- LOAD PERSISTED STATE FROM GSETTINGS (TRACKING RAW SECONDS) ---
+    const int session_seconds = g_settings_get_int(app->settings, "work-duration");
+    const int break_seconds = g_settings_get_int(app->settings, "break-duration");
 
-    // --- STATE INITIALIZATION (Use -> for pointers) ---
-    app->session_total_seconds = (int)(default_session_minutes * 60 + 0.5);
-    app->break_total_seconds = (int)(default_break_minutes * 60 + 0.5);
+    // --- STATE INITIALIZATION ---
+    app->session_total_seconds = session_seconds;
+    app->break_total_seconds = break_seconds;
     app->minutes = app->session_total_seconds / 60;
     app->seconds = app->session_total_seconds % 60;
     app->is_running = FALSE;
@@ -80,7 +82,8 @@ void create_ui(TimerApp *app) {
         GtkWidget *entry = gtk_entry_new();
         gtk_entry_set_width_chars(GTK_ENTRY(entry), 3);
 
-        char *default_text = g_strdup_printf("%g", i == 0 ? default_session_minutes : default_break_minutes);
+        const int display_minutes = ((i == 0 ? session_seconds : break_seconds) + 30) / 60;
+        char *default_text = g_strdup_printf("%d", display_minutes);
         gtk_entry_set_text(GTK_ENTRY(entry), default_text);
         g_free(default_text);
 

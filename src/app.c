@@ -1,8 +1,5 @@
 #include "../include/app.h"
 
-double default_session_minutes = 25;
-double default_break_minutes = 5;
-
 TimerApp *app_new() {
     TimerApp *app = g_new0(TimerApp, 1);
     app->session_total_seconds = 25 * 60;
@@ -11,6 +8,10 @@ TimerApp *app_new() {
     app->seconds = 0;
     app->is_running = FALSE;
     app->is_session = TRUE;
+    app->settings = g_settings_new("com.github.neobliz1.25Plus5Clock");
+    if (!app->settings) {
+        g_warning("Failed to initialize GSettings wrapper object.");
+    }
     return app;
 }
 

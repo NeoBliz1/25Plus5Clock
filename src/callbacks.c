@@ -22,7 +22,7 @@ gboolean timer_tick(gpointer data) {
             if (!app->is_session) {
                 // STARTING BREAK
                 if (gdk_window) {
-                    GdkWindowState state = gdk_window_get_state(gdk_window);
+                    const GdkWindowState state = gdk_window_get_state(gdk_window);
                     app->was_minimized = (state & GDK_WINDOW_STATE_ICONIFIED) != 0;
                     app->was_top_plane = (state & GDK_WINDOW_STATE_FOCUSED) != 0;
 
@@ -43,7 +43,7 @@ gboolean timer_tick(gpointer data) {
             }
 
             // Pull the total seconds and split them
-            int next_total = app->is_session ? app->session_total_seconds : app->break_total_seconds;
+            const int next_total = app->is_session ? app->session_total_seconds : app->break_total_seconds;
             app->minutes = next_total / 60;
             app->seconds = next_total % 60;
         } else {
@@ -133,13 +133,6 @@ void on_adjust_clicked(GtkWidget *btn, gpointer data) {
     snprintf(buf, sizeof(buf), "%d", current_mins);
     gtk_entry_set_text(GTK_ENTRY(widget), buf);
 
-    // 5. If we are currently looking at this mode, update the big clock
-    const gboolean editing_session = (widget == app->session_entry);
-    if ((editing_session && app->is_session) || (!editing_session && !app->is_session)) {
-        app->minutes = current_mins;
-        app->seconds = 0;
-        update_timer_display(app);
-    }
     update_if_active(widget, app, *total_sec);
 }
 
@@ -180,11 +173,12 @@ void on_reset_clicked(GtkWidget *btn, gpointer data) {
     app->is_session = TRUE;
 
     // Convert minutes to total seconds (0.1 -> 6 seconds)
-    app->session_total_seconds = (int)(default_session_minutes * 60 + 0.5);
-    app->break_total_seconds = (int)(default_break_minutes * 60 + 0.5);
+    app->session_total_seconds = g_settings_get_int(app->settings, "work-duration");
+    app->break_total_seconds = g_settings_get_int(app->settings, "break-duration");
 
+    const int session_minutes = app->session_total_seconds / 60;
     // Set the display state to match the session start
-    app->minutes = app->session_total_seconds / 60;
+    app->minutes = session_minutes;
     app->seconds = app->session_total_seconds % 60;
 
     // 3. Update UI Buttons and Labels
@@ -192,8 +186,8 @@ void on_reset_clicked(GtkWidget *btn, gpointer data) {
 
     // 4. Update Input Boxes (Convert double to string)
     char session_buf[16], break_buf[16];
-    g_ascii_formatd(session_buf, sizeof(session_buf), "%g", default_session_minutes);
-    g_ascii_formatd(break_buf, sizeof(break_buf), "%g", default_break_minutes);
+    g_ascii_formatd(session_buf, sizeof(session_buf), "%g", session_minutes);
+    g_ascii_formatd(break_buf, sizeof(break_buf), "%g", app->break_total_seconds / 60);
 
     gtk_entry_set_text(GTK_ENTRY(app->session_entry), session_buf);
     gtk_entry_set_text(GTK_ENTRY(app->break_entry), break_buf);
@@ -201,7 +195,6 @@ void on_reset_clicked(GtkWidget *btn, gpointer data) {
     // 5. Final Display Refresh
     update_timer_display(app);
     gtk_widget_show(app->controls_container);
-    // Inside on_reset_clicked
     gtk_window_unfullscreen(GTK_WINDOW(app->window));
     gtk_window_set_keep_above(GTK_WINDOW(app->window), FALSE);
 }
@@ -214,6 +207,13 @@ gboolean on_focus_out(GtkWidget *widget, GdkEvent *event, gpointer data) {
 
 void update_if_active(GtkWidget *widget, TimerApp *app, int total_seconds) {
     const gboolean editing_session = (widget == app->session_entry);
+    if (editing_session) {
+        app->session_total_seconds = total_seconds;
+        g_settings_set_int(app->settings, "work-duration", total_seconds);
+    } else {
+        app->break_total_seconds = total_seconds;
+        g_settings_set_int(app->settings, "break-duration", total_seconds);
+    }
     if ((editing_session && app->is_session) || (!editing_session && !app->is_session)) {
         app->minutes = total_seconds / 60;
         app->seconds = total_seconds % 60;
